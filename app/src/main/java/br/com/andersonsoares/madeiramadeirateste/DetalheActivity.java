@@ -4,17 +4,22 @@ import android.Manifest;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.google.zxing.client.android.CaptureActivity;
 
 import br.com.andersonsoares.activityutil.LocationActivity;
 import br.com.andersonsoares.madeiramadeirateste.model.Transporte;
@@ -48,9 +53,55 @@ public class DetalheActivity extends LocationActivity {
         this.toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        transporte = getIntent().getParcelableExtra("tranporte");
+        transporte = getIntent().getParcelableExtra("transporte");
         toolbar.setTitle(transporte.getNome());
+        endereco.setText(transporte.getEndereco());
+        tipo.setText(transporte.getTipo());
 
+        voltar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                onBackPressed();
+                finish();
+            }
+        });
+
+        acoes.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(DetalheActivity.this);
+                builder.setTitle("Ações de Comunicação com o destinatário")
+                        .setItems(new CharSequence[]{"Adicionar Prova Fotográfica","Capturar Assinatura","Capturar QR / Codigo de Barras",
+                                "Informar Ida ao Local"," Chegada ao Local"}, new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                                switch (which){
+                                    case 0:
+                                        if (ActivityCompat.checkSelfPermission(DetalheActivity.this,
+                                                Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                                            ActivityCompat.requestPermissions(DetalheActivity.this,new String[]{Manifest.permission.CAMERA},
+                                                    REQUEST_PERMISSIONS_CODE_LIGAR_SMS);
+                                        }else{
+                                            takepicture();
+                                        }
+                                        break;
+                                    case 1:
+                                        takesignature();
+                                        break;
+                                    case 2:
+                                        Intent intent = new Intent(getApplicationContext(),CaptureActivity.class);
+                                        intent.setAction("com.google.zxing.client.android.SCAN");
+                                        intent.putExtra("SAVE_HISTORY", false);
+                                        startActivityForResult(intent, 0);
+                                        break;
+                                }
+                            }
+                        });
+
+                AlertDialog dialog = builder.create();
+                dialog.show();
+            }
+        });
 
         entrega.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -193,6 +244,20 @@ public class DetalheActivity extends LocationActivity {
         });
     }
 
+    static final int REQUEST_IMAGE_CAPTURE = 1;
+
+    private void takepicture() {
+        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+            startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+        }
+    }
+
+    static final int REQUEST_IMAGE_SIGNATURE = 2;
+    private void takesignature() {
+        Intent intent = new Intent(this,AssinaturaActivity.class);
+        startActivityForResult(intent, REQUEST_IMAGE_SIGNATURE);
+    }
 
 
     public void call(String number){
@@ -226,6 +291,7 @@ public class DetalheActivity extends LocationActivity {
     private final static int REQUEST_PERMISSIONS_CODE_LIGAR_FIXO = 128;
     private final static int REQUEST_PERMISSIONS_CODE_LIGAR_CELULAR = 129;
     private final static int REQUEST_PERMISSIONS_CODE_LIGAR_SMS = 130;
+    private final static int REQUEST_PERMISSIONS_CODE_CAMERA = 131;
 
     @Override
     public void onLocationChanged(Location location) {
@@ -268,6 +334,39 @@ public class DetalheActivity extends LocationActivity {
 
         }
 
+        if(REQUEST_PERMISSIONS_CODE_CAMERA == requestCode){
+            for (int i = 0; i < permissions.length; i++) {
+                if (permissions[i].equalsIgnoreCase(Manifest.permission.CAMERA)
+                        && grantResults[i] == PackageManager.PERMISSION_DENIED) {
+                    return;
+                }
+            }
+            takepicture();
+
+        }
+
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
+            Bundle extras = data.getExtras();
+            Bitmap imageBitmap = (Bitmap) extras.get("data");
+
+        }
+        if (requestCode == REQUEST_IMAGE_SIGNATURE && resultCode == RESULT_OK) {
+            Bundle extras = data.getExtras();
+            //Bitmap imageBitmap = (Bitmap) extras.get("data");
+        }
+        if (requestCode == 0) {
+            if (resultCode == RESULT_OK) {
+                String contents = data.getStringExtra("SCAN_RESULT");
+                Log.d("qrcode", "contents: " + contents);
+            } else if (resultCode == RESULT_CANCELED) {
+                Log.d("qrcode", "RESULT_CANCELED");
+            }
+        }
     }
 }

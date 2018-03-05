@@ -23,7 +23,8 @@ dependencies {
     implementation 'com.android.support:appcompat-v7:26.1.0'
     implementation 'com.android.support.constraint:constraint-layout:1.0.2'
 
-
+    compile 'com.github.gcacace:signature-pad:1.2.1'
+    compile 'com.tarun0.zxing-standalone:zxing-standalone:1.0.0'
     implementation 'com.github.andersonrsoares.android-utils:activityutil:1.0.0'
 
 
