@@ -21,6 +21,8 @@ import android.widget.Toast;
 
 import com.google.zxing.client.android.CaptureActivity;
 
+import java.io.File;
+
 import br.com.andersonsoares.activityutil.LocationActivity;
 import br.com.andersonsoares.madeiramadeirateste.model.Transporte;
 
@@ -193,8 +195,6 @@ public class DetalheActivity extends LocationActivity {
             @Override
             public void onClick(View view) {
 
-
-
                 AlertDialog.Builder builder = new AlertDialog.Builder(DetalheActivity.this);
                 builder.setTitle("Ações de Localização")
                         .setItems(new CharSequence[]{"Visualizar Local de Entrega","Iniciar Rota com Google"}, new DialogInterface.OnClickListener() {
@@ -242,6 +242,8 @@ public class DetalheActivity extends LocationActivity {
                 dialog.show();
             }
         });
+
+
     }
 
     static final int REQUEST_IMAGE_CAPTURE = 1;
@@ -354,11 +356,20 @@ public class DetalheActivity extends LocationActivity {
         if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
             Bundle extras = data.getExtras();
             Bitmap imageBitmap = (Bitmap) extras.get("data");
+            try {
+                File outputDir = getCacheDir(); // context being the Activity pointer
+                File outputFile = File.createTempFile("foto", ".jpg", outputDir);
+                Utils.saveBitmap(imageBitmap,outputFile.getAbsolutePath(),"jpg", 60);
+            }catch (Exception ex){
+                Log.e("", "onActivityResult: ", ex);
+            }
 
         }
         if (requestCode == REQUEST_IMAGE_SIGNATURE && resultCode == RESULT_OK) {
             Bundle extras = data.getExtras();
-            //Bitmap imageBitmap = (Bitmap) extras.get("data");
+            String path = (String) extras.get("data");
+
+
         }
         if (requestCode == 0) {
             if (resultCode == RESULT_OK) {

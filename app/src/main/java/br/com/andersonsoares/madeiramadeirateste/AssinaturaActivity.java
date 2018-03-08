@@ -9,11 +9,16 @@ import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
 import com.github.gcacace.signaturepad.views.SignaturePad;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 
 import br.com.andersonsoares.activityutil.LocationActivity;
 
@@ -79,21 +84,30 @@ public class AssinaturaActivity extends LocationActivity {
                 final ProgressDialog progressDialog  = new ProgressDialog(this);
                 progressDialog.setMessage("Aguarde...");
                 progressDialog.show();
-                new AsyncTask<String,String,Bitmap>(){
+                new AsyncTask<String,String,String>(){
                     @Override
-                    protected Bitmap doInBackground(String... strings) {
-                        Bitmap bitmap = signaturepad.getTransparentSignatureBitmap(true);
+                    protected String doInBackground(String... strings) {
+                        try {
+                            Bitmap bitmap = signaturepad.getSignatureBitmap();
+
+                            File outputDir = getCacheDir(); // context being the Activity pointer
+                            File outputFile = File.createTempFile("assinatura", ".jpg", outputDir);
+                            Utils.saveBitmap(bitmap,outputFile.getAbsolutePath(),"jpg", 60);
+                            return outputFile.getAbsolutePath();
+                        }catch (Exception ex){
+                            Log.e("", "doInBackground: ", ex);
+                        }
+
                        // BitmapFactory.
-                        return bitmap;
+                        return "";
                     }
 
                     @Override
-                    protected void onPostExecute(Bitmap s) {
+                    protected void onPostExecute(String s) {
                         super.onPostExecute(s);
                         progressDialog.dismiss();
                         Intent intent = new Intent();
-
-                        //intent.putExtra("data",s);
+                        intent.putExtra("data",s);
                         setResult(RESULT_OK,intent);
                         finish();
 
@@ -114,4 +128,6 @@ public class AssinaturaActivity extends LocationActivity {
         getMenuInflater().inflate(R.menu.menu_assinatura, menu);
         return true;
     }
+
+
 }
